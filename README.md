@@ -117,7 +117,7 @@ familiar with it.
 If you have successfully installed git, you can get
 a copy of the development version with the following command:
 ```shell
-git clone https://gitlab.com/nsnam/ns-3-dev.git
+git clone https://github.com/serhatarslan-hub/bolt-cc-ns3.git
 ```
 
 However, we recommend to follow the Gitlab guidelines for starters,
