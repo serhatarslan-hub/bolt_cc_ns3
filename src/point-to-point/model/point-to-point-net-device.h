@@ -52,11 +52,11 @@ class ErrorModel;
  * \brief A Device for a Point to Point Network Link.
  *
  * This PointToPointNetDevice class specializes the NetDevice abstract
- * base class.  Together with a PointToPointChannel (and a peer 
- * PointToPointNetDevice), the class models, with some level of 
+ * base class.  Together with a PointToPointChannel (and a peer
+ * PointToPointNetDevice), the class models, with some level of
  * abstraction, a generic point-to-point or serial link.
- * Key parameters or objects that can be specified for this device 
- * include a queue, data rate, and interframe transmission gap (the 
+ * Key parameters or objects that can be specified for this device
+ * include a queue, data rate, and interframe transmission gap (the
  * propagation delay is set in the PointToPointChannel).
  */
 class PointToPointNetDevice : public NetDevice
@@ -73,7 +73,7 @@ public:
    * Construct a PointToPointNetDevice
    *
    * This is the constructor for the PointToPointNetDevice.  It takes as a
-   * parameter a pointer to the Node to which this device is connected, 
+   * parameter a pointer to the Node to which this device is connected,
    * as well as an optional DataRate object.
    */
   PointToPointNetDevice ();
@@ -95,6 +95,13 @@ public:
   void SetDataRate (DataRate bps);
 
   /**
+   * Get the Data Rate used for transmission of packets.  The data rate is
+   * set in the Attach () method from the corresponding field in the channel
+   * to which the device is attached.
+   */
+  DataRate GetDataRate();
+
+  /**
    * Set the interframe gap used to separate packets.  The interframe gap
    * defines the minimum space required between packets sent by this device.
    *
@@ -113,7 +120,7 @@ public:
   /**
    * Attach a queue to the PointToPointNetDevice.
    *
-   * The PointToPointNetDevice "owns" a queue that implements a queueing 
+   * The PointToPointNetDevice "owns" a queue that implements a queueing
    * method such as DropTailQueue or RedQueue
    *
    * \param queue Ptr to the new queue.
@@ -142,12 +149,19 @@ public:
    *
    * The PointToPointNetDevice receives packets from its connected channel
    * and forwards them up the protocol stack.  This is the public method
-   * used by the channel to indicate that the last bit of a packet has 
+   * used by the channel to indicate that the last bit of a packet has
    * arrived at the device.
    *
    * \param p Ptr to the received packet.
    */
   void Receive (Ptr<Packet> p);
+
+  /**
+   * \brief Make the link down and stop sending anything
+   *
+   * It calls also the linkChange callback.
+   */
+  void SetLinkDown(void);
 
   // The remaining methods are documented in ns3::NetDevice*
 
@@ -340,7 +354,7 @@ private:
 
   /**
    * The trace source fired for packets successfully received by the device
-   * immediately before being forwarded up to higher layers (at the L2/L3 
+   * immediately before being forwarded up to higher layers (at the L2/L3
    * transition).  This is a promiscuous trace (which doesn't mean a lot here
    * in the point-to-point device).
    */
@@ -348,15 +362,15 @@ private:
 
   /**
    * The trace source fired for packets successfully received by the device
-   * immediately before being forwarded up to higher layers (at the L2/L3 
-   * transition).  This is a non-promiscuous trace (which doesn't mean a lot 
+   * immediately before being forwarded up to higher layers (at the L2/L3
+   * transition).  This is a non-promiscuous trace (which doesn't mean a lot
    * here in the point-to-point device).
    */
   TracedCallback<Ptr<const Packet> > m_macRxTrace;
 
   /**
    * The trace source fired for packets successfully received by the device
-   * but are dropped before being forwarded up to higher layers (at the L2/L3 
+   * but are dropped before being forwarded up to higher layers (at the L2/L3
    * transition).
    */
   TracedCallback<Ptr<const Packet> > m_macRxDropTrace;
@@ -399,19 +413,19 @@ private:
   TracedCallback<Ptr<const Packet> > m_phyRxDropTrace;
 
   /**
-   * A trace source that emulates a non-promiscuous protocol sniffer connected 
-   * to the device.  Unlike your average everyday sniffer, this trace source 
+   * A trace source that emulates a non-promiscuous protocol sniffer connected
+   * to the device.  Unlike your average everyday sniffer, this trace source
    * will not fire on PACKET_OTHERHOST events.
    *
    * On the transmit size, this trace hook will fire after a packet is dequeued
    * from the device queue for transmission.  In Linux, for example, this would
-   * correspond to the point just before a device \c hard_start_xmit where 
-   * \c dev_queue_xmit_nit is called to dispatch the packet to the PF_PACKET 
+   * correspond to the point just before a device \c hard_start_xmit where
+   * \c dev_queue_xmit_nit is called to dispatch the packet to the PF_PACKET
    * ETH_P_ALL handlers.
    *
    * On the receive side, this trace hook will fire when a packet is received,
-   * just before the receive callback is executed.  In Linux, for example, 
-   * this would correspond to the point at which the packet is dispatched to 
+   * just before the receive callback is executed.  In Linux, for example,
+   * this would correspond to the point at which the packet is dispatched to
    * packet sniffers in \c netif_receive_skb.
    */
   TracedCallback<Ptr<const Packet> > m_snifferTrace;
@@ -423,13 +437,13 @@ private:
    *
    * On the transmit size, this trace hook will fire after a packet is dequeued
    * from the device queue for transmission.  In Linux, for example, this would
-   * correspond to the point just before a device \c hard_start_xmit where 
-   * \c dev_queue_xmit_nit is called to dispatch the packet to the PF_PACKET 
+   * correspond to the point just before a device \c hard_start_xmit where
+   * \c dev_queue_xmit_nit is called to dispatch the packet to the PF_PACKET
    * ETH_P_ALL handlers.
    *
    * On the receive side, this trace hook will fire when a packet is received,
-   * just before the receive callback is executed.  In Linux, for example, 
-   * this would correspond to the point at which the packet is dispatched to 
+   * just before the receive callback is executed.  In Linux, for example,
+   * this would correspond to the point at which the packet is dispatched to
    * packet sniffers in \c netif_receive_skb.
    */
   TracedCallback<Ptr<const Packet> > m_promiscSnifferTrace;
@@ -448,9 +462,9 @@ private:
   /**
    * \brief The Maximum Transmission Unit
    *
-   * This corresponds to the maximum 
+   * This corresponds to the maximum
    * number of bytes that can be transmitted as seen from higher layers.
-   * This corresponds to the 1500 byte MTU size often seen on IP over 
+   * This corresponds to the 1500 byte MTU size often seen on IP over
    * Ethernet.
    */
   uint32_t m_mtu;

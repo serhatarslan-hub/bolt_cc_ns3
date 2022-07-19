@@ -66,7 +66,7 @@ def configure(conf):
         conf.report_optional_feature("nsc", "Network Simulation Cradle", False,
                                      "NSC not found (see option --with-nsc)")
         return
-    
+
     if Utils.unversioned_sys_platform() in ['linux', 'freebsd']:
         arch = os.uname()[4]
     else:
@@ -78,7 +78,7 @@ def configure(conf):
         conf.check_nonfatal(mandatory=True, lib='dl', define_name='HAVE_DL', uselib_store='DL')
         ok = True
     conf.msg('Checking for NSC supported architecture ' + (arch or ''), ok)
-    
+
     if not ok:
         conf.env['NSC_ENABLED'] = False
         conf.report_optional_feature("nsc", "Network Simulation Cradle", False,
@@ -109,11 +109,14 @@ def build(bld):
         'model/ip-l4-protocol.cc',
         'model/udp-header.cc',
         'model/tcp-header.cc',
+        'model/bolt-header.cc',
+        'model/bolt-header-ptr.cc',
         'model/ipv4-interface.cc',
         'model/ipv4-l3-protocol.cc',
         'model/ipv4-end-point.cc',
         'model/udp-l4-protocol.cc',
         'model/tcp-l4-protocol.cc',
+        'model/bolt-l4-protocol.cc',
         'model/arp-header.cc',
         'model/arp-cache.cc',
         'model/arp-l3-protocol.cc',
@@ -153,7 +156,7 @@ def build(bld):
         'model/tcp-congestion-ops.cc',
         'model/tcp-linux-reno.cc',
         'model/tcp-westwood.cc',
-        'model/tcp-scalable.cc', 
+        'model/tcp-scalable.cc',
         'model/tcp-veno.cc',
         'model/tcp-bic.cc',
         'model/tcp-cubic.cc',
@@ -186,6 +189,8 @@ def build(bld):
         'model/udp-socket-factory.cc',
         'model/tcp-socket.cc',
         'model/tcp-socket-factory.cc',
+        'model/bolt-socket-factory.cc',
+        'model/bolt-socket.cc',
         'model/tcp-recovery-ops.cc',
         'model/tcp-prr-recovery.cc',
         'model/ipv4.cc',
@@ -313,7 +318,7 @@ def build(bld):
         internet_test.source.extend([
         #   'test/internet-examples-test-suite.cc',
             ])
-    
+
     privateheaders = bld(features='ns3privateheader')
     privateheaders.module = 'internet'
     privateheaders.source = [
@@ -323,6 +328,8 @@ def build(bld):
     headers.source = [
         'model/udp-header.h',
         'model/tcp-header.h',
+        'model/bolt-header.h',
+        'model/bolt-header-ptr.h',
         'model/tcp-option.h',
         'model/tcp-option-winscale.h',
         'model/tcp-option-ts.h',
@@ -347,6 +354,7 @@ def build(bld):
         'model/arp-l3-protocol.h',
         'model/udp-l4-protocol.h',
         'model/tcp-l4-protocol.h',
+        'model/bolt-l4-protocol.h',
         'model/icmpv4-l4-protocol.h',
         'model/ip-l4-protocol.h',
         'model/arp-header.h',
@@ -369,6 +377,8 @@ def build(bld):
         'model/udp-socket-factory.h',
         'model/tcp-socket.h',
         'model/tcp-socket-factory.h',
+        'model/bolt-socket-factory.h',
+        'model/bolt-socket.h',
         'model/ipv4.h',
         'model/ipv4-raw-socket-factory.h',
         'model/ipv4-raw-socket-impl.h',

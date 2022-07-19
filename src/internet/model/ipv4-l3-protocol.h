@@ -56,7 +56,7 @@ class Icmpv4L4Protocol;
  * \ingroup ipv4
  *
  * \brief Implement the IPv4 layer.
- * 
+ *
  * This is the actual implementation of IP.  It contains APIs to send and
  * receive packets at the IP layer, as well as APIs for IP routing.
  *
@@ -94,7 +94,7 @@ public:
    * \enum DropReason
    * \brief Reason why a packet has been dropped.
    */
-  enum DropReason 
+  enum DropReason
   {
     DROP_TTL_EXPIRED = 1,   /**< Packet TTL has expired */
     DROP_NO_ROUTE,   /**< No route to host */
@@ -164,7 +164,7 @@ public:
    * Higher-level layers call this method to send a packet
    * down the stack to the MAC and PHY layers.
    */
-  void Send (Ptr<Packet> packet, Ipv4Address source, 
+  void Send (Ptr<Packet> packet, Ipv4Address source,
              Ipv4Address destination, uint8_t protocol, Ptr<Ipv4Route> route);
   /**
    * \param packet packet to send
@@ -344,10 +344,8 @@ private:
    * \param p packet to forward
    * \param header IPv4 header to add to the packet
    */
-  void 
-  IpForward (Ptr<Ipv4Route> rtentry, 
-             Ptr<const Packet> p, 
-             const Ipv4Header &header);
+  void IpForward(Ptr<Ipv4Route> rtentry, Ptr<const Packet> p,
+                 const Ipv4Header &header);
 
   /**
    * \brief Forward a multicast packet.
@@ -355,10 +353,8 @@ private:
    * \param p packet to forward
    * \param header IPv4 header to add to the packet
    */
-  void
-  IpMulticastForward (Ptr<Ipv4MulticastRoute> mrtentry, 
-                      Ptr<const Packet> p, 
-                      const Ipv4Header &header);
+  void IpMulticastForward(Ptr<Ipv4MulticastRoute> mrtentry, Ptr<const Packet> p,
+                          const Ipv4Header &header);
 
   /**
    * \brief Deliver a packet.
@@ -602,6 +598,7 @@ private:
     FragmentsTimeoutsListI_t m_timeoutIter;
   };
 
+  bool m_mayFragment;  //!< Determines the value of Don't Fragment flags
   /// Container of fragments, stored as pairs(src+dst addr, src+dst port) / fragment
   typedef std::map< FragmentKey_t, Ptr<Fragments> > MapFragments_t;
 

@@ -1,0 +1,174 @@
+/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+/*
+ * Copyright (c) 2021 Google LLC
+ *
+ * All rights reserved.
+ *
+ * Author: Serhat Arslan <serhatarslan@google.com>
+ */
+
+#ifndef BOLT_HEADER_H
+#define BOLT_HEADER_H
+
+#include "ns3/header.h"
+
+namespace ns3 {
+/**
+ * \ingroup bolt
+ * \brief Packet header for Bolt Transport packets
+ *
+ * This class has fields corresponding to those in a network Bolt header
+ * (transport protocol) as well as methods for serialization
+ * to and deserialization from a byte buffer.
+ */
+class BoltHeader : public Header
+{
+ public:
+  /**
+   * \brief Constructor
+   *
+   * Creates a null header
+   */
+  BoltHeader ();
+  ~BoltHeader ();
+
+  /**
+   * \brief Get the type ID.
+   * \return the object TypeId
+   */
+  static TypeId GetTypeId (void);
+  virtual TypeId GetInstanceTypeId (void) const;
+  virtual void Print (std::ostream &os) const;
+  virtual uint32_t GetSerializedSize (void) const;
+  virtual void Serialize (Buffer::Iterator start) const;
+  virtual uint32_t Deserialize (Buffer::Iterator start);
+
+  /**
+   * \param port The source port for this BoltHeader
+   */
+  void SetSrcPort (uint16_t port);
+  /**
+   * \return The source port for this BoltHeader
+   */
+  uint16_t GetSrcPort (void) const;
+
+  /**
+   * \param port The destination port for this BoltHeader
+   */
+  void SetDstPort (uint16_t port);
+  /**
+   * \return the destination port for this BoltHeader
+   */
+  uint16_t GetDstPort (void) const;
+
+  /**
+   * \param txMsgId The TX message ID for this BoltHeader
+   */
+  void SetTxMsgId (uint16_t txMsgId);
+  /**
+   * \return The source port for this BoltHeader
+   */
+  uint16_t GetTxMsgId (void) const;
+
+  /**
+   * \brief Set the sequence or acknowledgement number for the packet
+   * \param seqAckNo The sequence number to set
+   */
+  void SetSeqAckNo(uint32_t seqAckNo);
+  /**
+   * \brief Get the sequence or acknowledgement number for the packet
+   * \return The sequence number associated with the packet
+   */
+  uint32_t GetSeqAckNo() const;
+
+  /**
+   * \brief Set flags of the header
+   * \param flags the flags for this BoltHeader
+   */
+  void SetFlags(uint16_t flags);
+  /**
+   * \brief Get the flags
+   * \return the flags for this BoltHeader
+   */
+  uint16_t GetFlags() const;
+
+  /**
+   * \brief Set the reflected hop count value for the packet
+   * \param reflectedHopCnt The number of hops in the path of this packet
+   */
+  void SetReflectedHopCnt(uint8_t reflectedHopCnt);
+  /**
+   * \brief Get the reflected hop count value of the packet
+   * \return The number of hops in the path of this packet
+   */
+  uint8_t GetReflectedHopCnt() const;
+
+  /**
+   * \brief Set the reflected timestamp for the packet
+   * \param reflectedDelay The timestamp for creation of the data packet
+   */
+  void SetReflectedDelay(uint32_t reflectedDelay);
+  /**
+   * \brief Get the reflected timestamp for the packet
+   * \return The timestamp for creation of the corresponding data packet
+   */
+  uint32_t GetReflectedDelay() const;
+
+  /**
+   * \brief Set the time to drain the most congested queue on the path
+   * \param drainTime The size of the queue in nanoseconds
+   */
+  void SetDrainTime(uint32_t qSize);
+  /**
+   * \brief Get the time to drain the most congested queue on the path
+   * \return The size of the most congested queue in nanoseconds
+   */
+  uint32_t GetDrainTime() const;
+
+  /**
+   * \brief Converts an integer into a human readable list of Bolt flags
+   *
+   * \param flags Bitfield of Bolt flags to convert to a readable string
+   * \param delimiter String to insert between flags
+   *
+   * \return the generated string
+   **/
+  static std::string FlagsToString(uint16_t flags,
+                                   const std::string& delimiter = "|");
+
+  /**
+   * \brief Bolt flag field values
+   */
+  typedef enum Flags_t {
+    DATA = 1,          //!< DATA Packet
+    ACK = 2,           //!< ACK
+    NACK = 4,          //!< NACK
+    CHOP = 8,          //!< Trimmed packet
+    BTS = 16,          //!< Back to sender
+    FIN = 32,          //!< Last packet
+    LAST = 64,         //!< Last window of packets
+    FIRST = 128,       //!< First window of packets
+    INCWIN = 256,      //!< Increment window
+    DECWIN = 512,      //!< Decrement window
+    AI = 1024,         //!< ACK for this packet will induce AI (experimental)
+    LINK10G = 2048,    //!< Bottleneck is 10Gbps
+    LINK25G = 4096,    //!< Bottleneck is 25Gbps
+    LINK40G = 8192,    //!< Bottleneck is 40Gbps
+    LINK100G = 16384,  //!< Bottleneck is 100Gbps
+    LINK400G = 32768   //!< Bottleneck is 400Gbps
+  } Flags_t;
+
+  static const uint8_t PROT_NUMBER = 196;  //!< Proto number of BOLT in IP layer
+
+ private:
+  uint16_t m_srcPort;         //!< Source port
+  uint16_t m_dstPort;         //!< Destination port
+  uint32_t m_seqAckNo;        //!< Sequence or Ack number in bytes
+  uint16_t m_flags;           //!< Packet type
+  uint16_t m_txMsgId;         //!< ID generated by the sender
+  uint32_t m_drainTime;       //!< Time to drain the most congested queue
+  uint32_t m_reflectedDelay;  //!< Timestamp to calculate RTT
+  uint8_t m_reflectedHopCnt;  //!< Number of hops between the end-hosts
+};
+}  // namespace ns3
+#endif /* BOLT_HEADER */
