@@ -15,6 +15,7 @@
 *.plt
 *.routes
 *.tr
+*.qlen
 [D|U]l[A-Z][a-z]*Stats.txt
 
 \#*#
