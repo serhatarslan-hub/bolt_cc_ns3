@@ -31,6 +31,11 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("BoltStarTopoIncastSimulation");
 
+double measurementStartTime = 0.0;  // Seconds to start taking measurements
+                                    // after START_TIME
+double measurementStopTime = 1.0;   // Seconds to stop taking measurements 
+                                    // after START_TIME
+
 double lastdataArrivalTime;
 uint64_t totalDataReceived = 0;
 double lastBtsDepartureTime;
@@ -64,29 +69,32 @@ void TraceMsgAcked(Ptr<OutputStreamWrapper> stream, uint32_t msgSize,
                        << " " << txMsgId << std::endl;
 }
 
-void TraceDataArrival(double duration, Ptr<const Packet> msg, Ipv4Address saddr,
-                      Ipv4Address daddr, uint16_t sport, uint16_t dport,
+void TraceDataArrival(uint32_t headerSize, Ptr<const Packet> msg, 
+                      Ipv4Address saddr, Ipv4Address daddr, 
+                      uint16_t sport, uint16_t dport,
                       int txMsgId, uint32_t seqNo, uint16_t flag) {
   Time now = Simulator::Now();
-  if (now.GetSeconds() <= START_TIME + duration) {
+  if (now.GetSeconds() >= START_TIME + measurementStartTime &&
+      now.GetSeconds() <= START_TIME + measurementStopTime) {
     lastdataArrivalTime = now.GetSeconds();
-
-    Ipv4Header ipv4h;  // Consider the total pkt size for link utilization
-    BoltHeader bolth;
-    totalDataReceived +=
-        msg->GetSize() + ipv4h.GetSerializedSize() + bolth.GetSerializedSize();
+    totalDataReceived += msg->GetSize() + headerSize;
   }
 }
 
-static void BtsDepartureTrace(double duration, uint32_t nBtsInFlight,
-                              uint32_t curQLen) {
+static void BtsDepartureTrace(Ptr<OutputStreamWrapper> stream,
+                              int hostIdx, size_t sideIdx, 
+                              uint32_t nBtsInFlight, uint32_t curQLen) {
   Time now = Simulator::Now();
-  if (now.GetSeconds() <= START_TIME + duration) {
+  if (now.GetSeconds() >= START_TIME + measurementStartTime &&
+      now.GetSeconds() <= START_TIME + measurementStopTime) {
     lastBtsDepartureTime = now.GetSeconds();
 
     Ipv4Header ipv4h;  // Consider the total pkt size for throughput
     BoltHeader bolth;
     totalBtsSize += bolth.GetSerializedSize() + ipv4h.GetSerializedSize();
+
+    *stream->GetStream() << "bts " << now.GetNanoSeconds() << " " << hostIdx
+                          << " " << sideIdx << " " << std::endl;
   }
 }
 
@@ -189,7 +197,7 @@ void SendMessages(Ptr<Socket> socket, InetSocketAddress receiverAddr,
 }
 
 void CalculateTailQueueOccupancy(std::string qStreamName, double percentile,
-                                 uint64_t bottleneckBitRate, double duration) {
+                                 uint64_t bottleneckBitRate) {
   std::ifstream qSizeTraceFile;
   qSizeTraceFile.open(qStreamName);
   NS_LOG_DEBUG("Reading Bottleneck Queue Size Trace From: " << qStreamName);
@@ -213,7 +221,9 @@ void CalculateTailQueueOccupancy(std::string qStreamName, double percentile,
     lineBuffer >> hostIdx;
     lineBuffer >> sideIdx;
     lineBuffer >> qSizeBytes;
-    if (logType == "que" && time < (uint64_t)((START_TIME + duration) * 1e9) &&
+    if (logType == "que" && 
+        time >= (uint64_t)((START_TIME + measurementStartTime) * 1e9) &&
+        time <= (uint64_t)((START_TIME + measurementStopTime) * 1e9) &&
         (hostIdx == 0 && sideIdx == 1))
       queueSizes.push_back(qSizeBytes);
   }
@@ -236,8 +246,10 @@ int main(int argc, char *argv[]) {
 
   std::string simNote("");
   int nSenders = 50;
-  int msgPerSender = 100;  // Incast degree is msgPerSender * nSenders
-  double duration = 1.00;
+  int msgPerSender = 100;         // Incast degree is msgPerSender * nSenders
+  uint32_t minMsgSize = 500000;   // Flow size in bytes
+  uint32_t msgSizeDiff = 0;       // Size difference between consecutive flows
+  double newMsgTime = 0.0;        // Time diff between two consecutive msgs
   uint32_t simIdx = 0;
   bool traceMessages = true;
   bool traceQueues = false;
@@ -281,9 +293,18 @@ int main(int argc, char *argv[]) {
                nSenders);
   cmd.AddValue("msgPerSender", "Number of messages that each host sends", 
                msgPerSender);
-  cmd.AddValue("duration", 
-               "The interval to collect stats in the beginning in seconds.",
-               duration);
+  cmd.AddValue("msgSize", "Size of each message in bytes", minMsgSize);
+  cmd.AddValue("msgSizeDiff", 
+               "Size difference between consecutive messages in bytes", 
+               msgSizeDiff);
+  cmd.AddValue("newMsgTime", "The interval at which a new flow joins/leaves.",
+               newMsgTime);
+  cmd.AddValue("measurementStartTime", 
+               "The time to start collecting stats in the beginning in sec.",
+               measurementStartTime);
+  cmd.AddValue("measurementStopTime", 
+               "The time to stop collecting stats after the beginning in sec.",
+               measurementStopTime);
   cmd.AddValue("simIdx",
                "The index of the simulation used to identify parallel runs.",
                simIdx);
@@ -484,7 +505,8 @@ int main(int argc, char *argv[]) {
       }
       if (traceBtsDeparture) {
         hostToSwQdisc[i].Get(j)->TraceConnectWithoutContext(
-            "BtsDeparture", MakeBoundCallback(&BtsDepartureTrace, duration));
+            "BtsDeparture", 
+            MakeBoundCallback(&BtsDepartureTrace, qStream, i, j));
       }
       if (tracePruTokens) {
         hostToSwQdisc[i].Get(j)->TraceConnectWithoutContext(
@@ -518,10 +540,10 @@ int main(int argc, char *argv[]) {
 
   BoltHeader bolth;
   Ipv4Header ipv4h;
-  uint32_t payloadSize =
-      mtu - bolth.GetSerializedSize() - ipv4h.GetSerializedSize();
+  uint32_t headerSize = bolth.GetSerializedSize() + ipv4h.GetSerializedSize();
+  uint32_t payloadSize = mtu - headerSize;
   uint32_t flowSizeBytes = static_cast<uint32_t>(
-      static_cast<double>(500000) *
+      static_cast<double>(minMsgSize) *
       static_cast<double>(payloadSize) / static_cast<double>(mtu));
 
   Ptr<Socket> receiverSocket = Socket::CreateSocket(
@@ -537,13 +559,13 @@ int main(int argc, char *argv[]) {
                                               BoltSocketFactory::GetTypeId());
       senderSocket[i-1]->Bind(InetSocketAddress(hostToSwIfs[i].GetAddress(0),
                                                 portNoStart + i));
-      Simulator::Schedule(Seconds(START_TIME),
+      Simulator::Schedule(Seconds(START_TIME + j * newMsgTime),
                           &SendMessages, senderSocket[i-1],
                           receiverAddr, flowSizeBytes);
 
-      // flowSizeBytes += static_cast<uint32_t>(
-      //     static_cast<double>(bdpBytes) *
-      //     static_cast<double>(payloadSize) / static_cast<double>(mtu));
+      flowSizeBytes += static_cast<uint32_t>(
+          static_cast<double>(msgSizeDiff) *
+          static_cast<double>(payloadSize) / static_cast<double>(mtu));
     }
   }
 
@@ -568,7 +590,7 @@ int main(int argc, char *argv[]) {
   }
   Config::ConnectWithoutContext(
       "/NodeList/*/$ns3::BoltL4Protocol/DataPktArrival",
-      MakeBoundCallback(&TraceDataArrival, duration));
+      MakeBoundCallback(&TraceDataArrival, headerSize));
 
   /******** Run the Actual Simulation ********/
   NS_LOG_WARN("Running the Simulation...");
@@ -586,7 +608,7 @@ int main(int argc, char *argv[]) {
         dynamic_cast<PointToPointNetDevice *>(&(*(hostToSwDevices[0].Get(0))));
     uint64_t hostBps = hostNetDevice->GetDataRate().GetBitRate();
 
-    CalculateTailQueueOccupancy(qStreamName, 0.99, hostBps, duration);
+    CalculateTailQueueOccupancy(qStreamName, 0.99, hostBps);
   }
 
   /******** Measure the bandwidth occupied by the BTS packets ********/

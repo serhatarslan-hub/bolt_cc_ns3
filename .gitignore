@@ -16,6 +16,7 @@
 *.routes
 *.tr
 *.qlen
+*.bts
 [D|U]l[A-Z][a-z]*Stats.txt
 
 \#*#
@@ -37,5 +38,6 @@ build-dir/
 build/
 /.cproject
 /.project
+/.vscode
 
 version.cache
