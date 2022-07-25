@@ -354,7 +354,13 @@ bool PfifoBoltQueueDisc::DoEnqueue(Ptr<QueueDiscItem> item) {
       // There is available bandwidth
       m_availLoad -= m_boundNetDevice->GetMtu();
     } else {
-      bolth->SetFlags(boltFlag & ~BoltHeader::Flags_t::INCWIN);
+      if (ipv4h.GetTtl() < 64 || m_absEnabled) {
+        // If the sender itself never becomes bottleneck, it tends to delete the
+        // INC flag on the packet and prevent PRU to take affect at the 
+        // bottleneck. When ABS is enabled, this is not a problem because it 
+        // makes the packet keep its INC flag anyway.
+        bolth->SetFlags(boltFlag & ~BoltHeader::Flags_t::INCWIN);
+      }
     }
   }
 

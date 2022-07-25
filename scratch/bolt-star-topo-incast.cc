@@ -559,7 +559,7 @@ int main(int argc, char *argv[]) {
                                               BoltSocketFactory::GetTypeId());
       senderSocket[i-1]->Bind(InetSocketAddress(hostToSwIfs[i].GetAddress(0),
                                                 portNoStart + i));
-      Simulator::Schedule(Seconds(START_TIME + j * newMsgTime),
+      Simulator::Schedule(Seconds(START_TIME + i * newMsgTime),
                           &SendMessages, senderSocket[i-1],
                           receiverAddr, flowSizeBytes);
 
@@ -598,8 +598,9 @@ int main(int argc, char *argv[]) {
   Simulator::Destroy();
 
   /******** Measure the total utilization of the network ********/
-  double totalUtilization = (double)totalDataReceived * 8.0 / 1e9 /
-                            (lastdataArrivalTime - START_TIME);
+  double totalUtilization = 
+      (double)totalDataReceived * 8.0 / 1e9 /
+      (lastdataArrivalTime - START_TIME - measurementStartTime);
   NS_LOG_UNCOND("Total utilization: " << totalUtilization << "Gbps");
 
   /******** Measure the tail occupancy of the bottleneck link ********/
@@ -614,7 +615,8 @@ int main(int argc, char *argv[]) {
   /******** Measure the bandwidth occupied by the BTS packets ********/
   if (traceBtsDeparture) {
     double btsBw =
-        (double)totalBtsSize * 8.0 / 1e9 / (lastBtsDepartureTime - START_TIME);
+        (double)totalBtsSize * 8.0 / 1e9 / 
+        (lastBtsDepartureTime - START_TIME - measurementStartTime);
     NS_LOG_UNCOND("The BTS bandwidth: " << btsBw << "Gbps");
   }
 
