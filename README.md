@@ -7,8 +7,9 @@ The Network Simulator, Version 3
 1) [An overview](#an-open-source-project)
 2) [Building ns-3](#building-ns-3)
 3) [Running ns-3](#running-ns-3)
-4) [Getting access to the ns-3 documentation](#getting-access-to-the-ns-3-documentation)
-5) [Working with the development version of ns-3](#working-with-the-development-version-of-ns-3)
+4) [Files modified or developed for Bolt](#files-modified-or-developed-for-bolt)
+5) [Getting access to the ns-3 documentation](#getting-access-to-the-ns-3-documentation)
+6) [Working with the development version of ns-3](#working-with-the-development-version-of-ns-3)
 
 Note:  Much more substantial information about ns-3 can be found at
 https://www.nsnam.org
@@ -47,7 +48,7 @@ included in the file doc/build.txt
 However, the real quick and dirty way to get started is to
 type the command
 ```shell
-./waf configure --enable-examples
+./waf configure
 ```
 
 followed by
@@ -68,18 +69,34 @@ improve the portability of the code to these other platforms.
 
 ## Running ns-3
 
-On recent Linux systems, once you have built ns-3 (with examples
-enabled), it should be easy to run the sample programs with the
-following command, such as:
+The scripts for different simulation scerios of Bolt are listed 
+under `scratch/` directory.
 
+For example, the simulations with the dumbbell topology can be run with:
 ```shell
-./waf --run simple-global-routing
+$./waf --run "scratch/bolt-link-utilization-experiment --traceQueues --duration=0.1
 ```
 
-That program should generate a `simple-global-routing.tr` text
-trace file and a set of `simple-global-routing-xx-xx.pcap` binary
-pcap trace files, which can be read by `tcpdump -tt -r filename.pcap`
-The program source can be found in the examples/routing directory.
+Please note that each script has a list of input arguments that can be 
+played with to run Bolt or Swift with different configurations. See the 
+script files for the list of accepted arguments.
+
+## Files modified or developed for Bolt
+
+The main files edited or developed for the implementation of Bolt are:
+
+`src/internet/model/bolt-header.cc/h`: Declaration of the Bolt packet header
+
+`src/internet/model/bolt-l4-protocol.cc/h`: Main algorithm logic for end-hosts
+
+`src/traffic-control/model/pfifo-bolt-queue-disc.cc`: Switch logic of Bolt
+
+`src/applications/model/msg-generator-app.cc/h`: Traffic generator with given flow size distributions
+
+`src/internet/model/ipv4-global-routing.cc/h`: adds ECMP feature
+
+Note that there may be other modified files for smal functionality that is not 
+fundamental to how Bolt works. Therefore they are not listed above.
 
 ## Getting access to the ns-3 documentation
 
